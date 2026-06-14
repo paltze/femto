@@ -149,9 +149,14 @@ void dump_registers(CPU* cpu) {
     printf("RA: %hx\n", cpu->ra);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc <= 1) {
+        printf("Please pass a hex file to execute\n");
+        return 0;
+    }
+
     CPU* cpu = calloc(1, sizeof(CPU));
-    int off = load_from_hex(cpu, "./programs/prime.hex");
+    int off = load_from_hex(cpu, argv[1]);
 
     while (cpu->pc < off)
         execute(cpu);

@@ -1,17 +1,18 @@
 CC := gcc
-CFLAGS := -Wall -Wextra -g
+CFLAGS := -Wall -Wextra
+SRC_DIR := src
+BIN_DIR := bin
 
-SRC := src/main.c
-OUT := bin/debug
+# Rule to compile and run
+%: $(SRC_DIR)/%.c | $(BIN_DIR)
+	@echo "--- Compiling $< ---"
+	$(CC) $(CFLAGS) $< -o $(BIN_DIR)/$*
+	@echo "--- Running $(BIN_DIR)/$* ---"
+	@$(BIN_DIR)/$* $(ARGS)
 
-all: run
+$(BIN_DIR):
+	mkdir -p $@
 
-$(OUT): $(SRC)
-	mkdir -p bin
-	$(CC) $(CFLAGS) $< -o $@
-
-run: $(OUT)
-	./$(OUT)
-
+.PHONY: clean
 clean:
-	rm -rf bin
+	rm -rf $(BIN_DIR)
