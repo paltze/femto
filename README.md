@@ -56,7 +56,7 @@ F      |`RET`  | J    |`$pc <- $ra` (`$rhi`, `$rlo` and `$rs` are not utlized)
 ## Registers
 
 ### General Purpose Registers
-`$r0` to `$r12` can be used for computing. These are 8-bit unsigned integer registers
+`$r0` to `$r12` and `$r15` can be used for computing. These are 8-bit unsigned integer registers
 
 ### Special Registers
 
@@ -73,11 +73,6 @@ Currently, two bits are utlized.
 #### Stack Pointer Alias: `$r14`
 
 `$r14` is reserved to be an alias to the stack pointer and can be directly manipulated with arithmetic instructions or to access memory
-
-#### Zero Register: `$r15`
-
-`$r15` is reserved as a zero register and should not be modified.
-Behavior of writes is undefined.
 
 ## Examples
 

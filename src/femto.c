@@ -142,11 +142,11 @@ void execute(CPU* cpu) {
 
 void dump_registers(CPU* cpu) {
     for (int i = 0; i <= 15; i++)
-        printf("R%d: %hx\n", i, cpu->r[i]);
+        printf("R%d: %02hX\n", i, cpu->r[i]);
 
-    printf("SP: %hx\n", cpu->sp);
-    printf("PC: %hx\n", cpu->pc);
-    printf("RA: %hx\n", cpu->ra);
+    printf("SP: %02hX\n", cpu->sp);
+    printf("PC: %02hX\n", cpu->pc);
+    printf("RA: %02hX\n", cpu->ra);
 }
 
 int main(int argc, char* argv[]) {
