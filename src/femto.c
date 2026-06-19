@@ -50,91 +50,114 @@ void execute(CPU* cpu) {
 
 
     if (opcode <= 0x7) {
-        u8 *rs = &cpu->r[(instr & 0x0F00) >> 8];
-        u8 *rt = &cpu->r[(instr & 0x00F0) >> 4];
-        u8 *rd = &cpu->r[instr & 0x000F];
+        u8 rd_i = (instr & 0x0F00) >> 8;
+        u8 rs_i = (instr & 0x00F0) >> 4;
+
+        u8 *rd = &cpu->r[rd_i];
+        u8 *rs = &cpu->r[rs_i];
+        u8 *rt = &cpu->r[instr & 0x000F];
+
+        if (rd_i == rs_i && rs_i == 14) {
+            if (opcode == 0) cpu->sp += *rt;
+            else if (opcode == 1) cpu->sp -= *rt;
+            return;
+        }
 
         switch (opcode) {
             case 0:
-                *rs = *rt + *rd;
+                *rd = *rs + *rt;
                 cpu->r[13] = 0;
 
-                if (*rs == 0)
+                if (*rd == 0)
                     cpu->r[13] |= ZERO_FLAG;
-                if ( (u16)(*rt) + (u16)(*rd) > 255 )
+                if ( (u16)(*rs) + (u16)(*rt) > 255 )
                     cpu->r[13] |= CARRY_FLAG;
 
                 break;
             case 1:
-                *rs = *rt - *rd;
+                *rd = *rs - *rt;
 
                 cpu->r[13] = 0;
 
-                if (*rs == 0)
+                if (*rd == 0)
                     cpu->r[13] |= ZERO_FLAG;
-                if ( (*rt) < (*rd) )
+                if ( (*rs) < (*rt) )
                     cpu->r[13] |= CARRY_FLAG;
 
                 break;
             case 2:
-                *rs = *rt & *rd;
+                *rd = *rs & *rt;
                 break;
             case 3:
-                *rs = *rt | *rd;
+                *rd = *rs | *rt;
                 break;
             case 4:
-                *rs = *rt ^ *rd;
+                *rd = *rs ^ *rt;
                 break;
             case 5:
-                *rs = ~(*rt);
+                *rd = ~(*rs);
                 break;
             case 6:
-                *rs = *rt << *rd;
+                *rd = *rs << *rt;
                 break;
             case 7:
-                *rs = *rt >> *rd;
+                *rd = *rs >> *rt;
         }
     }
     else if (opcode == 0x8) {
-        u8 *rs = &cpu->r[(instr & 0x0F00) >> 8];
+        u8 *rd = &cpu->r[(instr & 0x0F00) >> 8];
         u8 imm = instr & 0x00FF;
 
-        *rs = imm;
+        *rd = imm;
     }
     else if (opcode == 0x9 || opcode == 0xA) {
+        u8 rhi_i = (instr & 0x00F0) >> 4;
+        u8 rlo_i = instr & 0x000F;
+
         u8 *rs = &cpu->r[(instr & 0x0F00) >> 8];
-        u8 *rhi = &cpu->r[(instr & 0x00F0) >> 4];
-        u8 *rlo = &cpu->r[instr & 0x000F];
+        u8 *rhi = &cpu->r[rhi_i];
+        u8 *rlo = &cpu->r[rlo_i];
+
+        u16 mem;
+        if (rhi_i == rlo_i && rhi_i == 14) 
+            mem = cpu->sp;
+        else
+            mem = comb(*rhi, *rlo);
 
         if (opcode == 9)
-            *rs = cpu->mem[comb(*rhi, *rlo)];
+            *rs = cpu->mem[mem];
         else if (opcode == 10)
-            cpu->mem[comb(*rhi, *rlo)] = *rs;
+            cpu->mem[mem] = *rs;
 
     }
     else {
-        u8 *rs = &cpu->r[(instr & 0x0F00) >> 8];
-        u8 *rt = &cpu->r[(instr & 0x00F0) >> 4];
-        u8 *rd = &cpu->r[instr & 0x000F];
+        u8 *rhi = &cpu->r[(instr & 0x0F00) >> 8];
+        u8 *rlo = &cpu->r[(instr & 0x00F0) >> 4];
+        u8 *rs = &cpu->r[instr & 0x000F];
 
-        u16 label = comb(*rs, *rt);
+        u16 label = comb(*rhi, *rlo);
 
         switch (opcode) {
             case 0xB:
                 cpu->pc = label;
                 break;
             case 0xC:
-                if (*rd == 0) cpu->pc = label;
+                if (*rs == 0) cpu->pc = label;
                 break;
             case 0xD:
-                if (*rd != 0) cpu->pc = label;
+                if (*rs != 0) cpu->pc = label;
                 break;
             case 0xE:
-                cpu->ra = cpu->pc;
+                cpu->sp -= 2;
+
+                cpu->mem[cpu->sp] = hi(cpu->pc);
+                cpu->mem[cpu->sp + 1] = lo(cpu->pc);
+
                 cpu->pc = label;
                 break;
             case 0xF:
-                cpu->pc = cpu->ra;
+                cpu->pc = comb(cpu->mem[cpu->sp], cpu->mem[cpu->sp + 1]);
+                cpu->sp += 2;
                 break;
         }
     }

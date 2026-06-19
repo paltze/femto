@@ -20,7 +20,8 @@ typedef enum {
     R,
     I,
     M,
-    J
+    J,
+    P // For pseudo
 } InstrType;
 
 typedef struct {
@@ -46,7 +47,9 @@ const Instr instrs[] = {
     { "JZ",    3, J, 12 },
     { "JNZ",   3, J, 13 },
     { "CALL",  3, J, 14 },
-    { "RET",   1, J, 15 }
+    { "RET",   1, J, 15 },
+    { "PUSH",  3, P, 16 },
+    { "POP",   3, P, 17 }
 };
 
 const int instr_size = sizeof(instrs) / sizeof(Instr);
@@ -72,9 +75,9 @@ void build_labels(FILE* fp, Label* labels, int* label_size) {
         char* comm = strchr(line, ';');
         if (comm) *comm = '\0';
 
-        if (line[0] == '\n' || line[0] == '\0') continue;
+        if (sscanf(line, "%s", mnemonic) <= 0)
+            continue;
 
-        sscanf(line, "%s", mnemonic);
         const int mnemonic_size = strlen(mnemonic);
 
         if (mnemonic[mnemonic_size - 1] == ':') {
@@ -119,9 +122,9 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
         char* comm = strchr(line, ';');
         if (comm) *comm = '\0';
 
-        if (line[0] == '\n' || line[0] == '\0') continue;
-
-        sscanf(line, "%s", mnemonic);
+        if (sscanf(line, "%s", mnemonic) <= 0)
+            continue;
+        
         if (mnemonic[strlen(mnemonic) - 1] == ':') continue;
 
         const Instr* instr = find_instr(mnemonic);
@@ -169,6 +172,19 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
             fprintf(out, "8C%02hX\n", lo(addr));
             fprintf(out, "8F%02hX\n", hi(addr));
             fprintf(out, "%1hXFC%1hX\n", instr->id, rs);
+        }
+        // Now parsing pseudo instructions
+        else if (instr->id == 16) {
+            int rs = 0;
+            sscanf(line, "%s R%d", mnemonic, &rs);
+
+            fprintf(out, "8F01\n1EEF\nA%1hXEE\n", rs);
+        }
+        else if (instr->id == 17) {
+            int rs = 0;
+            sscanf(line, "%s R%d", mnemonic, &rs);
+
+            fprintf(out, "9%1hXEE\n8F01\n0EEF\n", rs);
         }
     }
 }
