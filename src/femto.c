@@ -65,24 +65,25 @@ void execute(CPU* cpu) {
 
         switch (opcode) {
             case 0:
-                *rd = *rs + *rt;
                 cpu->r[13] = 0;
-
-                if (*rd == 0)
-                    cpu->r[13] |= ZERO_FLAG;
                 if ( (u16)(*rs) + (u16)(*rt) > 255 )
                     cpu->r[13] |= CARRY_FLAG;
 
-                break;
-            case 1:
-                *rd = *rs - *rt;
-
-                cpu->r[13] = 0;
+                *rd = *rs + *rt;
 
                 if (*rd == 0)
                     cpu->r[13] |= ZERO_FLAG;
+
+                break;
+            case 1:
+                cpu->r[13] = 0;
                 if ( (*rs) < (*rt) )
                     cpu->r[13] |= CARRY_FLAG;
+                
+                *rd = *rs - *rt;
+
+                if (*rd == 0)
+                    cpu->r[13] |= ZERO_FLAG;
 
                 break;
             case 2:
