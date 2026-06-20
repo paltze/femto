@@ -181,9 +181,14 @@ int main(int argc, char* argv[]) {
     CPU* cpu = calloc(1, sizeof(CPU));
     int off = load_from_hex(cpu, argv[1]);
 
-    while (cpu->pc < off)
-        execute(cpu);
+    uint64_t instruction_count = 0;
 
+    while (cpu->pc < off) {
+        instruction_count++;
+        execute(cpu);
+    }
+
+    printf("\n%lu instructions executed\n\n", instruction_count);
     dump_registers(cpu);
 
     free(cpu);

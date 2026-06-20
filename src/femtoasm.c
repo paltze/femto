@@ -49,7 +49,15 @@ const Instr instrs[] = {
     { "CALL",  3, J, 14 },
     { "RET",   1, J, 15 },
     { "PUSH",  3, P, 16 },
-    { "POP",   3, P, 17 }
+    { "POP",   3, P, 17 },
+    { "PUSHI", 4, P, 18 },
+    { "MOV",   1, P, 19 },
+    { "INC",   2, P, 20 },
+    { "DEC",   2, P, 21 },
+    { "CLR",   1, P, 22 },
+    { "JE",    5, P, 23 },
+    { "JNE",   5, P, 24 },
+    { "JLT",   6, P, 25 }
 };
 
 const int instr_size = sizeof(instrs) / sizeof(Instr);
@@ -185,6 +193,57 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
             sscanf(line, "%s R%d", mnemonic, &rs);
 
             fprintf(out, "9%1hXEE\n8F01\n0EEF\n", rs);
+        }
+        else if (instr->id == 18) {
+            u8 imm;
+            sscanf(line, "%s %c", mnemonic, &imm);
+
+            fprintf(out, "8F%02hX\n", imm);
+            fprintf(out, "9FEE\n8F01\n0EEF\n");
+        }
+        else if (instr->id == 19) {
+            int rd, rs;
+            sscanf(line, "%s R%d, R%d", mnemonic, &rd, &rs);
+            fprintf(out, "2%1hX%1hX%1hX\n", rd, rs, rs);
+        }
+        else if (instr->id == 20) {
+            int rs;
+            sscanf(line, "%s R%d", mnemonic, &rs);
+            fprintf(out, "8F01\n0%1hX%1hXF\n", rs, rs);
+        }
+        else if (instr->id == 21) {
+            int rs;
+            sscanf(line, "%s R%d", mnemonic, &rs);
+            fprintf(out, "8F01\n1%1hX%1hXF\n", rs, rs);
+        }
+        else if (instr->id == 22) {
+            int rs;
+            sscanf(line, "%s R%d", mnemonic, &rs);
+            fprintf(out, "8%hX00\n", rs);
+        }
+        else if (instr->id == 23 || instr->id == 24 || instr->id == 25) {
+            int rs, rt;
+            char label[256];
+            sscanf(line, "%s %[^,], R%d, R%d", mnemonic, label, &rs, &rt);
+
+            u16 addr;
+            if (!find_label(&addr, label, labels, label_count)) {
+                printf("Unknown label: %s\n", label);
+                return;
+            }
+
+            if (instr->id == 23 || instr->id == 24)
+                fprintf(out, "1F%1hX%1hX\n2DFF\n", rs, rt);
+            else
+                fprintf(out, "1F%1hX%1hX\n8C01\n7DDC\n", rs, rt);
+
+            fprintf(out, "8C%02hX\n", lo(addr));
+            fprintf(out, "8F%02hX\n", hi(addr));
+
+            if (instr->id == 23)
+                fprintf(out, "CFCD\n");
+            else
+                fprintf(out, "DFCD\n");
         }
     }
 }
