@@ -196,10 +196,10 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
         }
         else if (instr->id == 18) {
             u8 imm;
-            sscanf(line, "%s %c", mnemonic, &imm);
+            sscanf(line, "%s %hhu", mnemonic, &imm);
 
-            fprintf(out, "8F%02hX\n", imm);
-            fprintf(out, "9FEE\n8F01\n0EEF\n");
+            fprintf(out, "8C%02hX\n", imm);
+            fprintf(out, "8F01\n1EEF\nACEE\n");
         }
         else if (instr->id == 19) {
             int rd, rs;
