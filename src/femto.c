@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #define u16 uint16_t
 #define u8 uint8_t
@@ -14,8 +15,9 @@
 
 typedef struct {
     u8 r[16];
-    u16 sp, pc, ra;
+    u16 sp, pc;
     u8 mem[65536];
+    uint64_t freq[16];
 } CPU;
 
 int load_from_hex(CPU* cpu, const char* path) {
@@ -46,8 +48,9 @@ void execute(CPU* cpu) {
     u16 instr = comb(cpu->mem[cpu->pc + 1], cpu->mem[cpu->pc]);
     u16 opcode = (instr & 0xF000) >> 12;
 
-    cpu->pc += 2;
+    cpu->freq[opcode]++;
 
+    cpu->pc += 2;
 
     if (opcode <= 0x7) {
         u8 rd_i = (instr & 0x0F00) >> 8;
@@ -170,7 +173,36 @@ void dump_registers(CPU* cpu) {
 
     printf("SP: %02hX\n", cpu->sp);
     printf("PC: %02hX\n", cpu->pc);
-    printf("RA: %02hX\n", cpu->ra);
+}
+
+void frequency(CPU* cpu) {
+    char* table[] = {
+        "ADD",
+        "SUB",
+        "AND",
+        "OR",
+        "XOR",
+        "NOT",
+        "SHL",
+        "SHR",
+        "MOVI",
+        "LOAD",
+        "STORE",
+        "JMP",
+        "JZ",
+        "JNZ",
+        "CALL",
+        "RET"
+    };
+
+    uint64_t sum = 0;
+
+    for (int i = 0; i <= 15; i++)
+        sum += cpu->freq[i];
+
+    printf("\nTotal: %lu\n", sum);
+    for (int i = 0; i <= 15; i++)
+        printf("%s, %lu, %.2Lf%%\n", table[i], cpu->freq[i], (((long double) cpu->freq[i]) * 100) / ((long double) sum));
 }
 
 int main(int argc, char* argv[]) {
@@ -182,15 +214,15 @@ int main(int argc, char* argv[]) {
     CPU* cpu = calloc(1, sizeof(CPU));
     int off = load_from_hex(cpu, argv[1]);
 
-    uint64_t instruction_count = 0;
-
-    while (cpu->pc < off) {
-        instruction_count++;
+    while (cpu->pc < off)
         execute(cpu);
-    }
 
-    printf("\n%lu instructions executed\n\n", instruction_count);
     dump_registers(cpu);
+
+    for (int i = 2; i < argc; i++) {
+        if (!strcmp(argv[i], "-f"))
+            frequency(cpu);
+    }
 
     free(cpu);
 
