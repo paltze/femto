@@ -15,7 +15,7 @@
 
 typedef struct {
     u8 r[16];
-    u16 sp, pc;
+    u16 sp, fp, pc;
     u8 mem[65536];
     uint64_t freq[16];
 } CPU;
@@ -116,15 +116,17 @@ void execute(CPU* cpu) {
     }
     else if (opcode == 0x9 || opcode == 0xA) {
         u8 rhi_i = (instr & 0x00F0) >> 4;
-        u8 rlo_i = instr & 0x000F;
 
         u8 *rs = &cpu->r[(instr & 0x0F00) >> 8];
         u8 *rhi = &cpu->r[rhi_i];
-        u8 *rlo = &cpu->r[rlo_i];
+        u8 *rlo = &cpu->r[instr & 0x000F];
 
         u16 mem;
-        if (rhi_i == rlo_i && rhi_i == 14) 
-            mem = cpu->sp;
+
+        if (rhi_i == 14)
+            mem = cpu->sp + *rlo;
+        else if (rhi_i == 11)
+            mem = cpu->fp + *rlo;
         else
             mem = comb(*rhi, *rlo);
 
@@ -152,16 +154,25 @@ void execute(CPU* cpu) {
                 if (*rs != 0) cpu->pc = label;
                 break;
             case 0xE:
-                cpu->sp -= 2;
+                cpu->sp -= 4;
 
                 cpu->mem[cpu->sp] = hi(cpu->pc);
                 cpu->mem[cpu->sp + 1] = lo(cpu->pc);
+                cpu->mem[cpu->sp + 2] = hi(cpu->fp);
+                cpu->mem[cpu->sp + 3] = lo(cpu->fp);
+
+                cpu->fp = cpu->sp + 4;
 
                 cpu->pc = label;
                 break;
             case 0xF:
+                if (cpu->fp != cpu->sp + 4) {
+                    printf("Improper stack handling detected\n");
+                    exit(0);
+                }
                 cpu->pc = comb(cpu->mem[cpu->sp], cpu->mem[cpu->sp + 1]);
-                cpu->sp += 2;
+                cpu->fp = comb(cpu->mem[cpu->sp + 2], cpu->mem[cpu->sp + 3]);
+                cpu->sp += 4;
                 break;
         }
     }
