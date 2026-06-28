@@ -1,5 +1,7 @@
 # Femto
 
+> ⚠️ For anyone reading. Much of this is outdated right now. And I'm too lazy to write about all the updates I've pushed over the last few weeks. Will get done eventually, but for the time being, have a look at examples if you want.
+
 Femto is a lean 8-bit CPU emulator. Features:
 
 - 16-bit fixed width instructions
