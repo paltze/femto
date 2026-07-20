@@ -1,88 +1,40 @@
-# Femto
+# Femto-8
 
-> ⚠️ For anyone reading. Much of this is outdated right now. And I'm too lazy to write about all the updates I've pushed over the last few weeks. Will get done eventually, but for the time being, have a look at examples if you want.
-
-Femto is a lean 8-bit CPU emulator. Features:
+Femto-8 is an 8-bit virtual CPU
 
 - 16-bit fixed width instructions
 - 16 instructions ISA
-- 64 kB memory with a 16-bit memory address bus
+- 64KB memory with a 16-bit memory address width
 - 13 general purpose 8-bit unsigned integer registers
 
 ## Usage
 
-Simply compile and execute `main.c`. The emulator loads the given file into the CPU memory, with the very first instruction at location `0x0000` and starts execution.
+Run `make release` to obtain binaries `femto` (the emulator) and `femtoasm` (the assembler). Alternatively, use `make [filename] ARGS='[args]'` to automatically compile and run `src/[filename]`
 
-Since an instruction is 16-bit and the memory is byte addressable, pointers to instruction are stored in pair of memory locations in little-endian format
+### `femto`
 
-Edit the path in Line 154 of `src/main.c` to change the program to be loaded into the memory.
+Following command to execute a Femto-8 Hex binary, as defined in docs:
 
-## Instructions
+```
+femto path/to/binary.hex
+``` 
 
-A total of 16 instructions of 4 types
+Optional `-f` flag to print the frequency analysis of the instructions executed
 
-### Types
+### `femtoasm`
 
- Type | Format 
-------|--------
- R    | `[opcode][rd][rs][rt]`
- I    | `[opcode][rd][imm]`
- M    | `[opcode][rs][rhi][rlo]`
- J    | `[opcode][rhi][rlo][rs]`
+Following command to assemble a Femto-8 ASM program to a Femto-8 Hex binary:
 
- - All registers are 4-bit values, immediate value is 8-bit.
- - Register value can point to any register if the register is not utilized in the instruction
- - For J type instructions, pointer to the instruction to jump to has to be stored in a pair of registers 
+```
+femtoasm path/to/assembly.asm path/to/binary.hex
+```
+## Docs
 
-### List
-
-Opcode | Name  | Type | Notes
--------|-------| -----| ------
-0      |`ADD`  | R    |`$rd <- $rs + $rt`
-1      |`SUB`  | R    |`$rd <- $rs - $rt`
-2      |`AND`  | R    |`$rd <- $rs & $rt`
-3      |`OR`   | R    |`$rd <- $rs \| $rt`
-4      |`XOR`  | R    |`$rd <- $rs ^ $rt`
-5      |`NOT`  | R    |`$rd <- ~$rs` (`$rt` is not utilized)
-6      |`SHL`  | R    |`$rd <- $rs << $rt`
-7      |`SHR`  | R    |`$rd <- $rs >> $rt`
-8      |`MOVI` | I    |`$rd <- imm`
-9      |`LOAD` | M    |`$rs <- mem[$rhi\|$rlo]`
-A      |`STORE`| M    |`$rs -> mem[$rhi\|$rlo]`
-B      |`JMP`  | J    |`$pc <- $rhi\|$rlo` (`$rs` is not utilized)
-C      |`JZ`   | J    |If `$rs == 0` then `$pc <- $rhi\|$rlo`
-D      |`JNZ`  | J    |If `$rs != 0` then `$pc <- $rhi\|$rlo`
-E      |`CALL` | J    |Store pointer to next instruction in `$ra` then `$pc <- $rhi\|$rlo` (`$rs` is not utilized)
-F      |`RET`  | J    |`$pc <- $ra` (`$rhi`, `$rlo` and `$rs` are not utlized)
-
-## Registers
-
-### General Purpose Registers
-`$r0` to `$r12` and `$r15` can be used for computing. These are 8-bit unsigned integer registers
-
-### Special Registers
-
-#### Status Register: `$r13`
-Currently, two bits are utlized.
-
-- If the `0x1` bit is set, the last arithmetic operation computed to zero
-    - Only `ADD` and `SUB` instructions set this bit when appropriate, all other instructions do not interact with this bit
-
-- If the `0x2` bit is set, the last arithmetic operation either produced a carry, or needed a borrow, whichever is appropriate
-    - Only `ADD` and `SUB` instructions set this bit when appropriate, all other instructions do not interact with this bit
-
-
-#### Stack Pointer Alias: `$r14`
-
-`$r14` is reserved to be an alias to the stack pointer and can be directly manipulated with arithmetic instructions or to access memory
+Find detailed docs on the virtual CPU and Femto-8 ASM and its assembler in `docs/`
 
 ## Examples
 
-The `program/` directory contains two examples.
-
-- `add.hex`: Load value 10 into registers `$r0` and `$r1`, and store their sum in `$r2`
-
-- `prime.hex`: Primality checker. Load target value in `$r0` in the first instruction. Output a boolean (`1` for prime, `0` for not prime) in `$r2`
+The `program/` directory contains some example Femto-8 ASM programs
 
 ## License
 

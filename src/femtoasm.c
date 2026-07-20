@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <strings.h>
 
 #define u16 uint16_t
 #define u8 uint8_t
@@ -120,11 +123,34 @@ int find_label(u16* target, char* label, Label* labels, int label_count) {
 }
 
 
+int parse_imm(const char *s) {
+    if (!strncasecmp(s, "0b", 2))
+        return strtol(s + 2, NULL, 2);
 
+    return strtol(s, NULL, 0);
+}
+
+int parse_reg(const char *s) {
+    if (!strcasecmp(s, "SP"))
+        return 14;
+
+    if (!strcasecmp(s, "FP"))
+        return 11;
+
+    if (!strcasecmp(s, "SR"))
+        return 13;
+
+    if (toupper((unsigned char)s[0]) == 'R')
+        return atoi(s + 1);
+
+    return -1;
+}
 
 void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
     char line[256];
     char mnemonic[256];
+
+    char r1[4], r2[4], r3[4], imm_s[16], label[256];
 
     while(fgets(line, sizeof(line), in)) {
         char* comm = strchr(line, ';');
@@ -143,31 +169,32 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
         }
 
         if (instr->type == R) {
-            int d, s, t;
-            sscanf(line, "%s R%d, R%d, R%d", mnemonic, &d, &s, &t);
+            sscanf(line, "%s %s, %s, %s", mnemonic, r1, r2, r3);
+            int d = parse_reg(r1), s = parse_reg(r2), t = parse_reg(r3);
             fprintf(out, "%1hX%1hX%1hX%1hX\n", instr->id, d, s, t);
         }
         else if (instr->type == I) {
-            int d, imm;
-            sscanf(line, "%s R%d, %d", mnemonic, &d, &imm);
+            sscanf(line, "%s %s, %s", mnemonic, r1, imm_s);
+            int d = parse_reg(r1), imm = parse_imm(imm_s);
             fprintf(out, "%1hX%1hX%02hX\n", instr->id, d, imm);
         }
         else if (instr->type == M) {
-            int d, rhi, rlo;
-            sscanf(line, "%s R%d, R%d, R%d", mnemonic, &d, &rhi, &rlo);
+            sscanf(line, "%s %s, %s, %s", mnemonic, r1, r2, r3);
+            int d = parse_reg(r1), rhi = parse_reg(r2), rlo = parse_reg(r3);
             fprintf(out, "%1hX%1hX%1hX%1hX\n", instr->id, d, rhi, rlo);
         }
         else if (instr->type == J) {
-            char label[256];
-            int rs = 0;
-
             if (instr->id == 15) {
                 fprintf(out, "F000\n");
                 continue;
             }
 
-            if (instr->id == 12 || instr->id == 13)
-                sscanf(line, "%s %[^,], R%d", mnemonic, label, &rs);
+
+            int rs = 0;
+            if (instr->id == 12 || instr->id == 13) {
+                sscanf(line, "%s %s, %s", mnemonic, label, r1);
+                rs = parse_reg(r1);
+            }
             else
                 sscanf(line, "%s %s", mnemonic, label);
 
@@ -183,48 +210,47 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
         }
         // Now parsing pseudo instructions
         else if (instr->id == 16) {
-            int rs = 0;
-            sscanf(line, "%s R%d", mnemonic, &rs);
+            sscanf(line, "%s %s", mnemonic, r1);
+            int rs = parse_reg(r1);
 
             fprintf(out, "8F01\n1EEF\nA%1hXEE\n", rs);
         }
         else if (instr->id == 17) {
-            int rs = 0;
-            sscanf(line, "%s R%d", mnemonic, &rs);
+            sscanf(line, "%s %s", mnemonic, r1);
+            int rs = parse_reg(r1);
 
             fprintf(out, "9%1hXEE\n8F01\n0EEF\n", rs);
         }
         else if (instr->id == 18) {
-            u8 imm;
-            sscanf(line, "%s %hhu", mnemonic, &imm);
+            sscanf(line, "%s %s", mnemonic, imm_s);
+            u8 imm = parse_imm(imm_s);
 
             fprintf(out, "8C%02hX\n", imm);
             fprintf(out, "8F01\n1EEF\nACEE\n");
         }
         else if (instr->id == 19) {
-            int rd, rs;
-            sscanf(line, "%s R%d, R%d", mnemonic, &rd, &rs);
+            sscanf(line, "%s %s, %s", mnemonic, r1, r2);
+            int rd = parse_reg(r1), rs = parse_reg(r2);
             fprintf(out, "2%1hX%1hX%1hX\n", rd, rs, rs);
         }
         else if (instr->id == 20) {
-            int rs;
-            sscanf(line, "%s R%d", mnemonic, &rs);
+            sscanf(line, "%s %s", mnemonic, r1);
+            int rs = parse_reg(r1);
             fprintf(out, "8F01\n0%1hX%1hXF\n", rs, rs);
         }
         else if (instr->id == 21) {
-            int rs;
-            sscanf(line, "%s R%d", mnemonic, &rs);
+            sscanf(line, "%s %s", mnemonic, r1);
+            int rs = parse_reg(r1);
             fprintf(out, "8F01\n1%1hX%1hXF\n", rs, rs);
         }
         else if (instr->id == 22) {
-            int rs;
-            sscanf(line, "%s R%d", mnemonic, &rs);
+            sscanf(line, "%s %s", mnemonic, r1);
+            int rs = parse_reg(r1);
             fprintf(out, "8%hX00\n", rs);
         }
         else if (instr->id == 23 || instr->id == 24 || instr->id == 25) {
-            int rs, rt;
-            char label[256];
-            sscanf(line, "%s %[^,], R%d, R%d", mnemonic, label, &rs, &rt);
+            sscanf(line, "%s %s, %s, %s", mnemonic, label, r1, r2);
+            int rs = parse_reg(r1), rt = parse_reg(r2);
 
             u16 addr;
             if (!find_label(&addr, label, labels, label_count)) {

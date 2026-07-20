@@ -37,19 +37,39 @@ solve:
     MOVI R0, 4
     SUB R14, R14, R0
 
-    ; Number of Fib iterations
+    ; Number of Fib iterations, and store the offsets
     MOVI R6, 31
+
+    MOVI R7, 12 ; Final solution
+    MOVI R8, 8 ; Fib(n - 2)
+    MOVI R9, 4 ; Fib(n - 1)
+    MOVI R10, 0 ; Scratch
 
 solve_loop1:
     JZ solve_exit, R6
     DEC R6
 
-    ; Calculate a + b
-    PUSHI 4
-    PUSHI 8
-    PUSHI 12
-    PUSHI 4
 
+    ;; Calculate a + b
+
+    MOVI R0, 4 ; Number of arguments, so will be added to arguments
+
+    ; Will become FP + 3
+    ADD R1, R10, R0 ; Scratch space
+    PUSH R1
+
+    ; Will become FP + 2
+    ADD R1, R8, R0 ; Fib(n - 2)
+    PUSH R1
+
+    ; Will become FP + 1
+    ADD R1, R9, R0 ; Fib(n - 1)
+    PUSH R1
+
+    ; Will become FP + 0
+    PUSHI 4 ; Number of bytes
+
+    ; Call subroutine, and claim back arguement space on the stack
     CALL u_nbyte_add
     MOVI R0, 4
     ADD R14, R14, R0
@@ -71,6 +91,7 @@ solve_loop1:
 
     CALL smemcpy
     ADD R14, R14, R7
+
 
     ; Check if even, if so accumulate
     MOVI R1, 4
