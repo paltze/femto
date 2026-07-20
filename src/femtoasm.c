@@ -169,17 +169,17 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
         }
 
         if (instr->type == R) {
-            sscanf(line, "%s %s, %s, %s", mnemonic, r1, r2, r3);
+            sscanf(line, "%s %[^,], %[^,], %s", mnemonic, r1, r2, r3);
             int d = parse_reg(r1), s = parse_reg(r2), t = parse_reg(r3);
             fprintf(out, "%1hX%1hX%1hX%1hX\n", instr->id, d, s, t);
         }
         else if (instr->type == I) {
-            sscanf(line, "%s %s, %s", mnemonic, r1, imm_s);
+            sscanf(line, "%s %[^,], %s", mnemonic, r1, imm_s);
             int d = parse_reg(r1), imm = parse_imm(imm_s);
             fprintf(out, "%1hX%1hX%02hX\n", instr->id, d, imm);
         }
         else if (instr->type == M) {
-            sscanf(line, "%s %s, %s, %s", mnemonic, r1, r2, r3);
+            sscanf(line, "%s %[^,], %[^,], %s", mnemonic, r1, r2, r3);
             int d = parse_reg(r1), rhi = parse_reg(r2), rlo = parse_reg(r3);
             fprintf(out, "%1hX%1hX%1hX%1hX\n", instr->id, d, rhi, rlo);
         }
@@ -192,7 +192,7 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
 
             int rs = 0;
             if (instr->id == 12 || instr->id == 13) {
-                sscanf(line, "%s %s, %s", mnemonic, label, r1);
+                sscanf(line, "%s %[^,], %s", mnemonic, label, r1);
                 rs = parse_reg(r1);
             }
             else
@@ -229,7 +229,7 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
             fprintf(out, "8F01\n1EEF\nACEE\n");
         }
         else if (instr->id == 19) {
-            sscanf(line, "%s %s, %s", mnemonic, r1, r2);
+            sscanf(line, "%s %[^,], %s", mnemonic, r1, r2);
             int rd = parse_reg(r1), rs = parse_reg(r2);
             fprintf(out, "2%1hX%1hX%1hX\n", rd, rs, rs);
         }
@@ -249,7 +249,7 @@ void build_output(FILE* in, FILE* out, Label* labels, int label_count) {
             fprintf(out, "8%hX00\n", rs);
         }
         else if (instr->id == 23 || instr->id == 24 || instr->id == 25) {
-            sscanf(line, "%s %s, %s, %s", mnemonic, label, r1, r2);
+            sscanf(line, "%s %[^,], %[^,], %s", mnemonic, label, r1, r2);
             int rs = parse_reg(r1), rt = parse_reg(r2);
 
             u16 addr;
